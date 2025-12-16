@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AI Crypto Risk Engine Demo</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+      color: #f9fafb;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 16px;
+    }
+
+    #container {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    /* Pipeline diagram */
+    #pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #020617;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #1f2937;
+    }
+
+    .pipeline-title {
+      font-size: 14px;
+      color: #cbd5f5;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 110px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      font-size: 13px;
+    }
+
+    .step.active {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+      background: radial-gradient(circle at top left, #0ea5e9 0, #020617 45%);
+    }
+
+    .step.completed:not(.active) {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, #064e3b 0, #020617 60%);
+    }
+
+    .step-label {
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #1f2937;
+      color: #9ca3af;
+    }
+
+    .step.active .step-index {
+      background: #38bdf8;
+      color: #0b1120;
+    }
+
+    .step.completed:not(.active) .step-index {
+      background: #22c55e;
+      color: #022c22;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      color: #e5e7eb;
+    }
+
+    .step-arrow {
+      width: 18px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 16px;
+      align-self: center;
+    }
+
+    .controls {
+      margin-top: 12px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #0ea5e9;
+      color: #0b1120;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s ease, transform 0.05s ease;
+    }
+
+    button.secondary {
+      background: #020617;
+      color: #e5e7eb;
+      border-color: #1f2937;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: #38bdf8;
+    }
+
+    button.secondary:hover {
+      background: #111827;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+    }
+
+    /* Right-side detail panel */
+    #detail {
+      background: #020617;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #1f2937;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #detail-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #step-status {
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+    }
+
+    #detail-text {
+      font-size: 13px;
+      color: #e5e7eb;
+      line-height: 1.4;
+      white-space: pre-line;
+    }
+
+    .small-label {
+      font-size: 12px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    #data-view {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: #020617;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      color: #e5e7eb;
+      overflow-x: auto;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      color: #9ca3af;
+    }
+
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #22c55e;
+    }
+
+    .pill-dot.alert {
+      background: #f97316;
+    }
+
+    .data-highlight {
+      color: #facc15;
+    }
+
+    .footer-note {
+      font-size: 11px;
+      color: #6b7280;
+      margin-top: 6px;
+    }
+
+    @media (max-width: 900px) {
+      #container {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Crypto Risk Engine – Interactive Demo</h1>
+  <div class="subtitle">
+    Click through the steps or press <strong>Play Demo</strong> to see a sample crypto transaction flow through the AI risk pipeline.
+  </div>
+
+  <div id="container">
+    <!-- Left: pipeline diagram -->
+    <div id="pipeline">
+      <div class="pipeline-title">Pipeline</div>
+      <div class="steps" id="steps-container">
+        <!-- Steps generated by JS -->
+      </div>
+      <div class="controls">
+        <button id="play-btn">▶ Play Demo</button>
+        <button id="next-btn" class="secondary">Next Step ➜</button>
+        <span class="pill">
+          <span class="pill-dot"></span>
+          Sample tx: salary customer → high-risk crypto flow
+        </span>
+      </div>
+    </div>
+
+    <!-- Right: detail panel -->
+    <div id="detail">
+      <div id="detail-title">
+        <span>Click a step or press "Play Demo"</span>
+        <span id="step-status">idle</span>
+      </div>
+      <div id="detail-text">
+        This panel will show:
+        • What each pipeline step does
+        • How the sample transaction looks at that stage
+        • Why it matters for crypto risk
+
+        Try: click on “Ingest” to start.
+      </div>
+
+      <div class="small-label">Sample transaction view</div>
+      <pre id="data-view">// Waiting for you to select a step…</pre>
+      <div class="footer-note">
+       <!-- Tip: walk participants through each step and relate it back to your institution’s own data sources and workflows. -->
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // --- CONFIG: pipeline steps & sample transaction logic ---
+
+    const steps = [
+      {
+        id: "ingest",
+        label: "Ingest",
+        desc: "Collect raw data from all relevant sources:\n\n• On-chain tx: wallet A → wallet B\n• Exchange logs: buy BTC with GBP\n• KYC: salary earner, UK resident\n• Device/IP: usual laptop, home IP\n\nAt this stage, we’re not judging – just capturing the evidence trail.",
+      },
+      {
+        id: "features",
+        label: "Feature Engineering",
+        desc: "Turn raw data into model-ready features:\n\n• amount_usd\n• tx_per_day (velocity)\n• mixer_exposure (0/1)\n• country_risk (0/1)\n• customer_income_band\n\nThis is where domain knowledge lives: what behaviours matter for risk?",
+      },
+      {
+        id: "model",
+        label: "Model",
+        desc: "Apply an AI model (e.g. anomaly detector + classifier):\n\n• Unsupervised model checks: “Does this look unusual vs this customer’s history?”\n• Supervised model estimates: “How similar is this to past suspicious cases?”\n\nOutput: a risk_score between 0 and 1.",
+      },
+      {
+        id: "decision",
+        label: "Decision Layer",
+        desc: "Turn the model output into an operational decision:\n\n• risk_score >= 0.9 → block & urgent review\n• 0.6 <= risk_score < 0.9 → send to analyst queue\n• risk_score < 0.6 → auto-approve & log\n\nThis is where you encode your risk appetite and policies.",
+      },
+      {
+        id: "feedback",
+        label: "Feedback",
+        desc: "Analyst investigation closes the loop:\n\n• Mark alert true_positive / false_positive\n• File SAR/STR if needed\n• Feed labels back into the training set\n\nOver time, the AI learns what your investigators consider genuinely suspicious.",
+      }
+    ];
+
+    // One sample transaction walking through the pipeline
+    const baseTransaction = {
+      tx_id: "TX-2025-CRYPTO-001",
+      customer_id: "CUST-1024",
+      profile: "Salaried professional, UK-based",
+      direction: "Outbound",
+      asset: "BTC",
+      amount_usd: 25000,
+      channel: "Exchange → external wallet",
+      timestamp: "2025-12-01T10:15:00Z",
+      mixer_exposure: 1,
+      country_risk: 1
+    };
+
+    let currentStepIndex = -1;
+    let demoInterval = null;
+
+    const stepsContainer = document.getElementById("steps-container");
+    const dataView = document.getElementById("data-view");
+    const detailTitle = document.getElementById("detail-title");
+    const detailText = document.getElementById("detail-text");
+    const stepStatus = document.getElementById("step-status");
+    const playBtn = document.getElementById("play-btn");
+    const nextBtn = document.getElementById("next-btn");
+
+    // --- UI helpers ---
+
+    function renderSteps() {
+      stepsContainer.innerHTML = "";
+      steps.forEach((step, index) => {
+        const el = document.createElement("div");
+        el.className = "step";
+        el.dataset.index = index;
+
+        const label = document.createElement("div");
+        label.className = "step-label";
+
+        const dot = document.createElement("span");
+        dot.className = "step-index";
+        dot.textContent = index + 1;
+
+        const text = document.createElement("span");
+        text.textContent = step.label;
+
+        label.appendChild(dot);
+        label.appendChild(text);
+
+        const desc = document.createElement("div");
+        desc.className = "step-desc";
+        if (index === 0) {
+          desc.textContent = "Bring in raw tx + KYC data";
+        } else if (index === 1) {
+          desc.textContent = "Build risk features from raw data";
+        } else if (index === 2) {
+          desc.textContent = "Model returns risk score";
+        } else if (index === 3) {
+          desc.textContent = "Apply thresholds & policies";
+        } else {
+          desc.textContent = "Label outcomes & retrain";
+        }
+
+        el.appendChild(label);
+        el.appendChild(desc);
+
+        el.addEventListener("click", () => {
+          stopDemo();
+          goToStep(index);
+        });
+
+        stepsContainer.appendChild(el);
+
+        // Add arrow between steps except last
+        if (index < steps.length - 1) {
+          const arrow = document.createElement("div");
+          arrow.className = "step-arrow";
+          arrow.innerHTML = "➜";
+          stepsContainer.appendChild(arrow);
+        }
+      });
+    }
+
+    function updateStepStyles() {
+      const stepEls = Array.from(document.querySelectorAll(".step"));
+      stepEls.forEach(el => {
+        const idx = parseInt(el.dataset.index, 10);
+        el.classList.remove("active", "completed");
+        if (idx === currentStepIndex) {
+          el.classList.add("active");
+        } else if (idx < currentStepIndex) {
+          el.classList.add("completed");
+        }
+      });
+    }
+
+    function prettyJson(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function getDataForStep(index) {
+      // Clone base tx
+      const tx = JSON.parse(JSON.stringify(baseTransaction));
+
+      if (index === 0) {
+        // Ingest: raw view
+        return tx;
+      }
+
+      if (index === 1) {
+        // Feature engineering: show derived features
+        return {
+          tx_id: tx.tx_id,
+          customer_id: tx.customer_id,
+          amount_usd: tx.amount_usd,
+          tx_per_day_customer: 3,
+          mixer_exposure: tx.mixer_exposure,
+          country_risk: tx.country_risk,
+          avg_amount_last_30d: 600,
+          usual_tx_type: "Domestic card payments",
+          comment: "Large, unusual crypto purchase vs profile."
+        };
+      }
+
+      if (index === 2) {
+        // Model: add risk score
+        return {
+          features: {
+            amount_usd: tx.amount_usd,
+            tx_per_day_customer: 3,
+            mixer_exposure: tx.mixer_exposure,
+            country_risk: tx.country_risk
+          },
+          model_outputs: {
+            anomaly_score: -0.45,
+            risk_score: 0.96,
+            contributing_factors: [
+              "Very high amount vs profile",
+              "High-risk country",
+              "Mixer exposure = 1"
+            ]
+          }
+        };
+      }
+
+      if (index === 3) {
+        // Decision: map to action
+        return {
+          tx_id: tx.tx_id,
+          customer_id: tx.customer_id,
+          risk_score: 0.96,
+          decision: "Block & urgent review",
+          routing: "High-priority investigator queue",
+          policy_rule: "Crypto-HighRisk-001",
+          comment: "Meets criteria for immediate intervention."
+        };
+      }
+
+      if (index === 4) {
+        // Feedback: investigation outcome
+        return {
+          case_id: "CASE-2025-0001",
+          tx_id: tx.tx_id,
+          investigation_outcome: "SAR filed",
+          label_for_model: "true_positive",
+          next_steps: [
+            "Include in future training dataset",
+            "Update typology library with ransomware pattern",
+            "Share intel with relevant teams"
+          ]
+        };
+      }
+
+      return tx;
+    }
+
+    function getStatusLabel(index) {
+      if (index < 0) return "idle";
+      const labels = ["raw data", "features ready", "model scoring", "decision applied", "learning"];
+      return labels[index] || "idle";
+    }
+
+    function goToStep(index) {
+      currentStepIndex = index;
+      updateStepStyles();
+
+      const step = steps[index];
+      detailTitle.innerHTML = `<span>${step.label}</span>`;
+      detailTitle.appendChild(stepStatus);
+      stepStatus.textContent = getStatusLabel(index);
+
+      detailText.textContent = step.desc;
+
+      const data = getDataForStep(index);
+      dataView.textContent = prettyJson(data);
+    }
+
+    function resetDemo() {
+      currentStepIndex = -1;
+      updateStepStyles();
+      stepStatus.textContent = "idle";
+      detailTitle.innerHTML = `<span>Click a step or press "Play Demo"</span>`;
+      detailTitle.appendChild(stepStatus);
+      detailText.textContent =
+        "This panel will show:\n" +
+        "• What each pipeline step does\n" +
+        "• How the sample transaction looks at that stage\n" +
+        "• Why it matters for crypto risk\n\n" +
+        "Try: click on “Ingest” to start.";
+      dataView.textContent = "// Waiting for you to select a step…";
+    }
+
+    function nextStep() {
+      if (currentStepIndex < steps.length - 1) {
+        goToStep(currentStepIndex + 1);
+      } else {
+        stopDemo();
+      }
+    }
+
+    function playDemo() {
+      stopDemo();
+      currentStepIndex = -1;
+      playBtn.disabled = true;
+      nextBtn.disabled = true;
+      let idx = 0;
+      demoInterval = setInterval(() => {
+        goToStep(idx);
+        idx++;
+        if (idx >= steps.length) {
+          stopDemo();
+        }
+      }, 1800);
+    }
+
+    function stopDemo() {
+      if (demoInterval) {
+        clearInterval(demoInterval);
+        demoInterval = null;
+      }
+      playBtn.disabled = false;
+      nextBtn.disabled = false;
+    }
+
+    // --- Init ---
+    renderSteps();
+    resetDemo();
+
+    playBtn.addEventListener("click", playDemo);
+    nextBtn.addEventListener("click", () => {
+      stopDemo();
+      if (currentStepIndex === -1) {
+        goToStep(0);
+      } else {
+        nextStep();
+      }
+    });
+  </script>
+</body>
+</html>
