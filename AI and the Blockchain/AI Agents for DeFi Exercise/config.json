@@ -1,0 +1,26 @@
+{
+  "chain": "sepolia",
+  "rpc_urls": [
+    "https://ethereum-sepolia.publicnode.com",
+    "https://rpc.sepolia.org",
+    "https://sepolia.gateway.tenderly.co"
+  ],
+  "lookback_blocks": 20,
+  "follow_poll_seconds": 8,
+  "min_score": 60,
+  "value_threshold_eth": 0.05,
+  "high_gas_threshold": 300000,
+  "max_receipt_fetch_per_block": 9999,
+  "output_jsonl": "alerts.jsonl",
+  "sqlite_state_db": "state.db",
+  "watchlist_path": "watchlist.txt",
+  "labels_path": "labels.csv",
+  "webhook_url": "",
+  "ai": {
+    "enable_summary": true,
+    "summary_mode": "heuristic",
+    "llm_endpoint": "",
+    "llm_api_key": "",
+    "llm_timeout_seconds": 30
+  }
+}
