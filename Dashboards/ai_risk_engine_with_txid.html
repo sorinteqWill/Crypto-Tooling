@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>AI Crypto Risk Engine</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #0f172a;
+      color: #e5e7eb;
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: 24px;
+      color: #f9fafb;
+    }
+
+    .subtitle {
+      font-size: 14px;
+      color: #9ca3af;
+      margin-bottom: 16px;
+      line-height: 1.35;
+    }
+
+    #container {
+      display: grid;
+      grid-template-columns: 2fr 3fr;
+      gap: 20px;
+      align-items: flex-start;
+    }
+
+    #pipeline {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      background: #020617;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #1f2937;
+    }
+
+    .pipeline-title {
+      font-size: 14px;
+      color: #cbd5f5;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .lookup {
+      display: grid;
+      grid-template-columns: 1fr 160px;
+      gap: 10px;
+      background: #0b1220;
+      border: 1px solid #1f2937;
+      border-radius: 12px;
+      padding: 12px;
+    }
+
+    .lookup-row {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 180px 140px;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .lookup input, .lookup select {
+      width: 100%;
+      box-sizing: border-box;
+      border-radius: 10px;
+      border: 1px solid #1f2937;
+      background: #020617;
+      color: #e5e7eb;
+      padding: 10px 12px;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .lookup input:focus, .lookup select:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+    }
+
+    .lookup-meta {
+      grid-column: 1 / -1;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .meta-left {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .status-text {
+      font-size: 12px;
+      color: #9ca3af;
+    }
+
+    .status-text strong {
+      color: #e5e7eb;
+      font-weight: 600;
+    }
+
+    .steps {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .step {
+      flex: 1;
+      min-width: 110px;
+      padding: 10px 12px;
+      border-radius: 10px;
+      background: #111827;
+      border: 1px solid #1f2937;
+      cursor: pointer;
+      position: relative;
+      transition: all 0.2s ease;
+      font-size: 13px;
+    }
+
+    .step.active {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 1px #38bdf8;
+      background: radial-gradient(circle at top left, #0ea5e9 0, #020617 45%);
+    }
+
+    .step.completed:not(.active) {
+      border-color: #22c55e;
+      background: linear-gradient(135deg, #064e3b 0, #020617 60%);
+    }
+
+    .step-label {
+      font-weight: 600;
+      margin-bottom: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .step-index {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      font-size: 11px;
+      background: #1f2937;
+      color: #9ca3af;
+    }
+
+    .step.active .step-index {
+      background: #38bdf8;
+      color: #0b1120;
+    }
+
+    .step.completed:not(.active) .step-index {
+      background: #22c55e;
+      color: #022c22;
+    }
+
+    .step-desc {
+      font-size: 12px;
+      color: #e5e7eb;
+    }
+
+    .step-arrow {
+      width: 18px;
+      text-align: center;
+      color: #6b7280;
+      font-size: 16px;
+      align-self: center;
+    }
+
+    .controls {
+      margin-top: 6px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .controls-left {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    button {
+      border-radius: 999px;
+      border: 1px solid transparent;
+      padding: 8px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      background: #0ea5e9;
+      color: #0b1120;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.2s ease, transform 0.05s ease;
+      user-select: none;
+    }
+
+    button.secondary {
+      background: #020617;
+      color: #e5e7eb;
+      border-color: #1f2937;
+    }
+
+    button:hover {
+      transform: translateY(-1px);
+      background: #38bdf8;
+    }
+
+    button.secondary:hover {
+      background: #111827;
+    }
+
+    button:disabled {
+      opacity: 0.4;
+      cursor: default;
+      transform: none;
+    }
+
+    #detail {
+      background: #020617;
+      border-radius: 12px;
+      padding: 16px;
+      border: 1px solid #1f2937;
+      min-height: 260px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    #detail-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #e5e7eb;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      justify-content: space-between;
+    }
+
+    #step-status {
+      font-size: 11px;
+      color: #9ca3af;
+      padding: 2px 8px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      white-space: nowrap;
+    }
+
+    #detail-text {
+      font-size: 13px;
+      color: #e5e7eb;
+      line-height: 1.4;
+      white-space: pre-line;
+    }
+
+    .small-label {
+      font-size: 12px;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-top: 4px;
+    }
+
+    #data-view {
+      font-family: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12px;
+      background: #020617;
+      border-radius: 8px;
+      border: 1px solid #1f2937;
+      padding: 10px;
+      color: #e5e7eb;
+      overflow-x: auto;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 999px;
+      border: 1px solid #1f2937;
+      color: #9ca3af;
+      max-width: 100%;
+    }
+
+    .pill .mono {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      color: #e5e7eb;
+    }
+
+    .pill-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: #6b7280;
+      flex: 0 0 auto;
+    }
+    .pill-dot.ok { background: #22c55e; }
+    .pill-dot.warn { background: #f97316; }
+    .pill-dot.bad { background: #ef4444; }
+
+    @media (max-width: 900px) {
+      #container { grid-template-columns: 1fr; }
+      .lookup-row { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>AI Crypto Risk Engine</h1>
+  <div class="subtitle">
+    Load a transaction by hash (TXID/tx hash), then step through the risk pipeline.
+    Data is fetched from BlockCypher’s public API endpoints (network selection matters). :contentReference[oaicite:1]{index=1}
+  </div>
+
+  <div id="container">
+    <!-- Left: pipeline diagram -->
+    <div id="pipeline">
+      <div class="pipeline-title">Transaction Lookup</div>
+
+      <div class="lookup">
+        <div class="lookup-row">
+          <input id="txid-input" placeholder="Paste TXID / tx hash (e.g., BTC txid or ETH tx hash)" autocomplete="off" />
+          <select id="chain-select" title="Select network">
+            <option value="btc-main">Bitcoin (BTC) – Mainnet</option>
+            <option value="btc-test3">Bitcoin (BTC) – Testnet3</option>
+            <option value="eth-main">Ethereum (ETH) – Mainnet</option>
+            <option value="ltc-main">Litecoin (LTC) – Mainnet</option>
+            <option value="doge-main">Dogecoin (DOGE) – Mainnet</option>
+            <option value="dash-main">Dash (DASH) – Mainnet</option>
+          </select>
+          <button id="load-btn">⬇ Load TX</button>
+        </div>
+
+        <div class="lookup-meta">
+          <div class="meta-left">
+            <span class="status-text" id="load-status">No transaction loaded.</span>
+            <span class="pill" id="tx-pill" style="display:none;">
+              <span class="pill-dot" id="risk-dot"></span>
+              <span class="mono" id="tx-pill-text"></span>
+            </span>
+          </div>
+          <button id="clear-btn" class="secondary">Clear</button>
+        </div>
+      </div>
+
+      <div class="pipeline-title">Pipeline</div>
+      <div class="steps" id="steps-container"></div>
+
+      <div class="controls">
+        <div class="controls-left">
+          <button id="auto-btn" class="secondary">▶ Auto-run</button>
+          <button id="next-btn" class="secondary">Next Step ➜</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: detail panel -->
+    <div id="detail">
+      <div id="detail-title">
+        <span id="detail-title-left">Select a step</span>
+        <span id="step-status">idle</span>
+      </div>
+
+      <div id="detail-text">
+        Load a transaction first, then click “Ingest” to start.
+      </div>
+
+      <div class="small-label">Transaction view</div>
+      <pre id="data-view">// No transaction loaded.</pre>
+    </div>
+  </div>
+
+  <script>
+    // -----------------------------
+    // Pipeline steps
+    // -----------------------------
+    const steps = [
+      {
+        id: "ingest",
+        label: "Ingest",
+        desc:
+          "Collect raw evidence from on-chain sources.\n\n" +
+          "• Transaction fields (hash, time, confirmations)\n" +
+          "• Inputs/outputs (UTXO chains) or from/to/value (account chains)\n" +
+          "• Fees, counts, and basic structure\n\n" +
+          "No judgement yet—just acquisition + normalization."
+      },
+      {
+        id: "features",
+        label: "Feature Engineering",
+        desc:
+          "Derive model-ready features:\n\n" +
+          "• amount_native (BTC/ETH/etc)\n" +
+          "• fee_native\n" +
+          "• inputs_count / outputs_count\n" +
+          "• confirmations (freshness)\n" +
+          "• structural signals (many inputs, many outputs)\n\n" +
+          "This is where investigative heuristics become measurable."
+      },
+      {
+        id: "model",
+        label: "Model",
+        desc:
+          "Score risk using a lightweight rules+signals model (placeholder for your real model):\n\n" +
+          "• High value vs baseline\n" +
+          "• Low confirmations (still settling)\n" +
+          "• Many inputs/outputs (complexity)\n\n" +
+          "Output: risk_score (0..1) + contributing factors."
+      },
+      {
+        id: "decision",
+        label: "Decision Layer",
+        desc:
+          "Translate score into an operational action:\n\n" +
+          "• >= 0.90 → block + urgent review\n" +
+          "• 0.60–0.89 → analyst queue\n" +
+          "• < 0.60 → allow + log\n\n" +
+          "These thresholds should match your policies and risk appetite."
+      },
+      {
+        id: "feedback",
+        label: "Feedback",
+        desc:
+          "Close the loop after investigation:\n\n" +
+          "• true_positive / false_positive labels\n" +
+          "• typology notes\n" +
+          "• retraining and calibration\n\n" +
+          "This is how the system improves over time."
+      }
+    ];
+
+    // -----------------------------
+    // BlockCypher endpoint mapping
+    // -----------------------------
+    const CHAIN_MAP = {
+      "btc-main":  { coin: "btc",  chain: "main",  asset: "BTC", baseUnit: 1e8 },
+      "btc-test3": { coin: "btc",  chain: "test3", asset: "BTC", baseUnit: 1e8 },
+      "eth-main":  { coin: "eth",  chain: "main",  asset: "ETH", baseUnit: 1e18 },
+      "ltc-main":  { coin: "ltc",  chain: "main",  asset: "LTC", baseUnit: 1e8 },
+      "doge-main": { coin: "doge", chain: "main",  asset: "DOGE", baseUnit: 1e8 },
+      "dash-main": { coin: "dash", chain: "main",  asset: "DASH", baseUnit: 1e8 }
+    };
+
+    // -----------------------------
+    // State
+    // -----------------------------
+    let currentStepIndex = -1;
+    let autoInterval = null;
+
+    // This is the ONLY source of truth once loaded.
+    let loaded = {
+      chainKey: "btc-main",
+      txid: "",
+      raw: null,
+      normalized: null,
+      error: null,
+      risk: null
+    };
+
+    // -----------------------------
+    // Elements
+    // -----------------------------
+    const stepsContainer = document.getElementById("steps-container");
+    const dataView = document.getElementById("data-view");
+    const detailTitleLeft = document.getElementById("detail-title-left");
+    const detailText = document.getElementById("detail-text");
+    const stepStatus = document.getElementById("step-status");
+
+    const txidInput = document.getElementById("txid-input");
+    const chainSelect = document.getElementById("chain-select");
+    const loadBtn = document.getElementById("load-btn");
+    const clearBtn = document.getElementById("clear-btn");
+    const loadStatus = document.getElementById("load-status");
+
+    const txPill = document.getElementById("tx-pill");
+    const txPillText = document.getElementById("tx-pill-text");
+    const riskDot = document.getElementById("risk-dot");
+
+    const autoBtn = document.getElementById("auto-btn");
+    const nextBtn = document.getElementById("next-btn");
+
+    // -----------------------------
+    // Helpers
+    // -----------------------------
+    function prettyJson(obj) {
+      return JSON.stringify(obj, null, 2);
+    }
+
+    function safeShortHash(h) {
+      if (!h || typeof h !== "string") return "";
+      if (h.length <= 14) return h;
+      return h.slice(0, 10) + "…" + h.slice(-6);
+    }
+
+    function setLoadStatus(text) {
+      loadStatus.textContent = text;
+    }
+
+    function setPill(riskScore) {
+      if (!loaded.normalized) {
+        txPill.style.display = "none";
+        riskDot.className = "pill-dot";
+        return;
+      }
+      txPill.style.display = "inline-flex";
+
+      const n = loaded.normalized;
+      const amt = (n.amount_native ?? 0).toLocaleString(undefined, { maximumFractionDigits: 8 });
+      const fee = (n.fee_native ?? 0).toLocaleString(undefined, { maximumFractionDigits: 8 });
+      const conf = (n.confirmations ?? 0);
+      txPillText.textContent =
+        `${n.asset} ${safeShortHash(n.tx_id)} · amount ${amt} · fee ${fee} · conf ${conf} · risk ${riskScore.toFixed(2)}`;
+
+      riskDot.className = "pill-dot";
+      if (riskScore >= 0.90) riskDot.classList.add("bad");
+      else if (riskScore >= 0.60) riskDot.classList.add("warn");
+      else riskDot.classList.add("ok");
+    }
+
+    function getStatusLabel(index) {
+      if (index < 0) return "idle";
+      const labels = ["raw data", "features ready", "model scoring", "decision applied", "learning"];
+      return labels[index] || "idle";
+    }
+
+    function stopAuto() {
+      if (autoInterval) {
+        clearInterval(autoInterval);
+        autoInterval = null;
+      }
+      autoBtn.disabled = false;
+      nextBtn.disabled = false;
+      loadBtn.disabled = false;
+    }
+
+    function updateStepStyles() {
+      const stepEls = Array.from(document.querySelectorAll(".step"));
+      stepEls.forEach(el => {
+        const idx = parseInt(el.dataset.index, 10);
+        el.classList.remove("active", "completed");
+        if (idx === currentStepIndex) el.classList.add("active");
+        else if (idx < currentStepIndex) el.classList.add("completed");
+      });
+    }
+
+    function renderSteps() {
+      stepsContainer.innerHTML = "";
+      steps.forEach((step, index) => {
+        const el = document.createElement("div");
+        el.className = "step";
+        el.dataset.index = index;
+
+        const label = document.createElement("div");
+        label.className = "step-label";
+
+        const dot = document.createElement("span");
+        dot.className = "step-index";
+        dot.textContent = index + 1;
+
+        const text = document.createElement("span");
+        text.textContent = step.label;
+
+        label.appendChild(dot);
+        label.appendChild(text);
+
+        const desc = document.createElement("div");
+        desc.className = "step-desc";
+        if (index === 0) desc.textContent = "Acquire + normalize";
+        else if (index === 1) desc.textContent = "Derive measurable signals";
+        else if (index === 2) desc.textContent = "Score risk + factors";
+        else if (index === 3) desc.textContent = "Apply thresholds";
+        else desc.textContent = "Label outcomes";
+
+        el.appendChild(label);
+        el.appendChild(desc);
+
+        el.addEventListener("click", () => {
+          stopAuto();
+          goToStep(index);
+        });
+
+        stepsContainer.appendChild(el);
+
+        if (index < steps.length - 1) {
+          const arrow = document.createElement("div");
+          arrow.className = "step-arrow";
+          arrow.innerHTML = "➜";
+          stepsContainer.appendChild(arrow);
+        }
+      });
+    }
+
+    // -----------------------------
+    // Normalization (BlockCypher-style)
+    // -----------------------------
+    function normalizeTx(raw, chainKey) {
+      const m = CHAIN_MAP[chainKey];
+      const txHash = raw?.hash || raw?.tx_hash || raw?.hashes?.[0] || loaded.txid || "";
+
+      // BlockCypher commonly uses:
+      // - received (ISO string)
+      // - confirmations (int)
+      // - total (base units)
+      // - fees (base units)
+      // - inputs/outputs arrays with addresses/value
+      const totalBase = Number(raw?.total ?? 0);
+      const feeBase = Number(raw?.fees ?? raw?.fee ?? 0);
+
+      const confirmations = Number(raw?.confirmations ?? 0);
+      const timestamp = raw?.received || raw?.confirmed || raw?.confirmed_at || null;
+
+      const inputs = Array.isArray(raw?.inputs) ? raw.inputs : [];
+      const outputs = Array.isArray(raw?.outputs) ? raw.outputs : [];
+
+      const fromCandidates = inputs.flatMap(i => Array.isArray(i?.addresses) ? i.addresses : []);
+      const toCandidates = outputs.flatMap(o => Array.isArray(o?.addresses) ? o.addresses : []);
+
+      const from = fromCandidates[0] || null;
+      const to = toCandidates[0] || null;
+
+      return {
+        tx_id: txHash,
+        asset: m.asset,
+        chain: chainKey,
+        timestamp,
+        confirmations,
+        amount_base: totalBase,
+        fee_base: feeBase,
+        amount_native: totalBase / m.baseUnit,
+        fee_native: feeBase / m.baseUnit,
+        inputs_count: inputs.length,
+        outputs_count: outputs.length,
+        from,
+        to
+      };
+    }
+
+    // -----------------------------
+    // Simple risk scoring (placeholder)
+    // -----------------------------
+    function scoreRisk(n) {
+      if (!n) return { risk_score: 0, factors: ["No transaction loaded"] };
+
+      const factors = [];
+      let s = 0.05;
+
+      // Amount heuristic (tune these to your environment)
+      const amt = n.amount_native || 0;
+      if (amt > 25) { s += 0.55; factors.push("High value transfer"); }
+      else if (amt > 5) { s += 0.30; factors.push("Moderate-high value transfer"); }
+      else if (amt > 1) { s += 0.15; factors.push("Non-trivial value transfer"); }
+
+      // Confirmation heuristic
+      const conf = n.confirmations || 0;
+      if (conf === 0) { s += 0.25; factors.push("Unconfirmed (settlement risk)"); }
+      else if (conf < 3) { s += 0.12; factors.push("Low confirmations"); }
+
+      // Structure heuristic
+      if ((n.inputs_count || 0) >= 8) { s += 0.15; factors.push("Many inputs (complex UTXO structure)"); }
+      if ((n.outputs_count || 0) >= 8) { s += 0.12; factors.push("Many outputs (fan-out / change complexity)"); }
+
+      // Fee heuristic
+      const fee = n.fee_native || 0;
+      if (fee > 0.01) { s += 0.08; factors.push("High fee relative to typical"); }
+
+      // clamp
+      s = Math.max(0, Math.min(1, s));
+      if (factors.length === 0) factors.push("No significant risk signals detected");
+      return { risk_score: s, factors };
+    }
+
+    // -----------------------------
+    // Pipeline data per step (USES LOADED STATE)
+    // -----------------------------
+    function getDataForStep(index) {
+      if (loaded.error) {
+        return {
+          error: true,
+          message: loaded.error,
+          hint: "Check network selection, TX hash, CORS, or rate limiting.",
+          chain_selected: loaded.chainKey,
+          txid_entered: loaded.txid
+        };
+      }
+
+      if (!loaded.raw || !loaded.normalized) {
+        return { message: "No transaction loaded." };
+      }
+
+      const n = loaded.normalized;
+      const r = loaded.risk || scoreRisk(n);
+
+      if (index === 0) {
+        return {
+          normalized: n,
+          raw_preview: {
+            hash: loaded.raw?.hash,
+            received: loaded.raw?.received,
+            confirmations: loaded.raw?.confirmations,
+            total: loaded.raw?.total,
+            fees: loaded.raw?.fees,
+            inputs_count: Array.isArray(loaded.raw?.inputs) ? loaded.raw.inputs.length : 0,
+            outputs_count: Array.isArray(loaded.raw?.outputs) ? loaded.raw.outputs.length : 0
+          }
+        };
+      }
+
+      if (index === 1) {
+        return {
+          tx_id: n.tx_id,
+          asset: n.asset,
+          confirmations: n.confirmations,
+          features: {
+            amount_native: n.amount_native,
+            fee_native: n.fee_native,
+            inputs_count: n.inputs_count,
+            outputs_count: n.outputs_count,
+            is_unconfirmed: (n.confirmations || 0) === 0 ? 1 : 0,
+            complexity_flag: (n.inputs_count >= 8 || n.outputs_count >= 8) ? 1 : 0
+          },
+          note: "Replace these heuristics with your real feature store (OSINT tags, sanctions hits, cluster exposure, etc.)."
+        };
+      }
+
+      if (index === 2) {
+        return {
+          model_outputs: {
+            risk_score: r.risk_score,
+            contributing_factors: r.factors
+          },
+          explanation:
+            "This is a placeholder scoring function so you can wire in your real model later (rules, ML, graph analytics, vendor signals)."
+        };
+      }
+
+      if (index === 3) {
+        const score = r.risk_score;
+        let decision = "Allow & log";
+        let routing = "Standard monitoring";
+        let policy_rule = "CRYPTO-RISK-ALLOW";
+
+        if (score >= 0.90) {
+          decision = "Block & urgent review";
+          routing = "High-priority investigator queue";
+          policy_rule = "CRYPTO-RISK-BLOCK";
+        } else if (score >= 0.60) {
+          decision = "Queue for analyst review";
+          routing = "Analyst triage queue";
+          policy_rule = "CRYPTO-RISK-REVIEW";
+        }
+
+        return {
+          tx_id: n.tx_id,
+          risk_score: score,
+          decision,
+          routing,
+          policy_rule
+        };
+      }
+
+      if (index === 4) {
+        return {
+          case_id: "CASE-" + new Date().getFullYear() + "-" + Math.floor(Math.random() * 9000 + 1000),
+          tx_id: n.tx_id,
+          analyst_outcome: "pending",
+          label_for_model: "pending",
+          next_steps: [
+            "Collect OSINT enrichment (entity tags, known services, exchange attribution)",
+            "Add disposition once investigation completes",
+            "Feed labels into retraining / calibration"
+          ]
+        };
+      }
+
+      return { normalized: n };
+    }
+
+    function goToStep(index) {
+      currentStepIndex = index;
+      updateStepStyles();
+
+      const step = steps[index];
+      detailTitleLeft.textContent = step.label;
+      stepStatus.textContent = getStatusLabel(index);
+      detailText.textContent = step.desc;
+
+      const data = getDataForStep(index);
+      dataView.textContent = prettyJson(data);
+    }
+
+    function resetPanel() {
+      currentStepIndex = -1;
+      updateStepStyles();
+      stepStatus.textContent = "idle";
+      detailTitleLeft.textContent = "Select a step";
+      detailText.textContent = "Load a transaction first, then click “Ingest” to start.";
+      dataView.textContent = loaded.error
+        ? prettyJson(getDataForStep(0))
+        : (loaded.normalized ? "// Select a step to view details." : "// No transaction loaded.");
+    }
+
+    // -----------------------------
+    // Loading
+    // -----------------------------
+    function sanitizeTxid(input) {
+      let t = (input || "").trim();
+      // Allow pasted EVM hash with 0x prefix; BlockCypher typically accepts without 0x.
+      if (t.startsWith("0x") || t.startsWith("0X")) t = t.slice(2);
+      // Remove whitespace just in case
+      t = t.replace(/\s+/g, "");
+      return t;
+    }
+
+    async function loadTransaction() {
+      stopAuto();
+      const chainKey = chainSelect.value;
+      const txid = sanitizeTxid(txidInput.value);
+
+      loaded.chainKey = chainKey;
+      loaded.txid = txid;
+      loaded.raw = null;
+      loaded.normalized = null;
+      loaded.error = null;
+      loaded.risk = null;
+
+      txPill.style.display = "none";
+      setLoadStatus("Loading…");
+      dataView.textContent = "// Loading…";
+
+      if (!txid || txid.length < 16) {
+        loaded.error = "Please enter a valid-looking transaction hash.";
+        setLoadStatus("Error: " + loaded.error);
+        resetPanel();
+        return;
+      }
+
+      const m = CHAIN_MAP[chainKey];
+      const url = `https://api.blockcypher.com/v1/${m.coin}/${m.chain}/txs/${txid}`;
+
+      try {
+        loadBtn.disabled = true;
+        autoBtn.disabled = true;
+        nextBtn.disabled = true;
+
+        const resp = await fetch(url, { method: "GET" });
+        if (!resp.ok) {
+          const text = await resp.text().catch(() => "");
+          throw new Error(`HTTP ${resp.status} ${resp.statusText}${text ? " — " + text.slice(0, 140) : ""}`);
+        }
+
+        const raw = await resp.json();
+        const normalized = normalizeTx(raw, chainKey);
+        const risk = scoreRisk(normalized);
+
+        loaded.raw = raw;
+        loaded.normalized = normalized;
+        loaded.risk = risk;
+        loaded.error = null;
+
+        setLoadStatus(`Loaded ${normalized.asset} transaction ${safeShortHash(normalized.tx_id)}.`);
+        setPill(risk.risk_score);
+
+        // Jump user into the pipeline at step 0
+        goToStep(0);
+      } catch (e) {
+        loaded.error = (e && e.message) ? e.message : "Failed to load transaction.";
+        setLoadStatus("Error: " + loaded.error);
+        resetPanel();
+      } finally {
+        loadBtn.disabled = false;
+        autoBtn.disabled = false;
+        nextBtn.disabled = false;
+      }
+    }
+
+    function clearAll() {
+      stopAuto();
+      txidInput.value = "";
+      loaded = {
+        chainKey: chainSelect.value,
+        txid: "",
+        raw: null,
+        normalized: null,
+        error: null,
+        risk: null
+      };
+      txPill.style.display = "none";
+      setLoadStatus("No transaction loaded.");
+      resetPanel();
+    }
+
+    // -----------------------------
+    // Auto-run
+    // -----------------------------
+    function autoRun() {
+      stopAuto();
+      if (!loaded.normalized && !loaded.error) {
+        setLoadStatus("Load a transaction first.");
+        return;
+      }
+      autoBtn.disabled = true;
+      nextBtn.disabled = true;
+      loadBtn.disabled = true;
+
+      let idx = 0;
+      autoInterval = setInterval(() => {
+        goToStep(idx);
+        idx++;
+        if (idx >= steps.length) stopAuto();
+      }, 1400);
+    }
+
+    function nextStep() {
+      if (currentStepIndex < steps.length - 1) goToStep(currentStepIndex + 1);
+      else stopAuto();
+    }
+
+    // -----------------------------
+    // Init
+    // -----------------------------
+    renderSteps();
+    resetPanel();
+
+    chainSelect.addEventListener("change", () => {
+      loaded.chainKey = chainSelect.value;
+    });
+
+    loadBtn.addEventListener("click", loadTransaction);
+    clearBtn.addEventListener("click", clearAll);
+
+    autoBtn.addEventListener("click", autoRun);
+    nextBtn.addEventListener("click", () => {
+      stopAuto();
+      if (currentStepIndex === -1) goToStep(0);
+      else nextStep();
+    });
+
+    // Allow Enter key to load
+    txidInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") loadTransaction();
+    });
+  </script>
+</body>
+</html>
